@@ -14,12 +14,13 @@ const PhotoListWrapper: FC<{
   loading: boolean;
   searchedPhotos: Photo[] | null;
   randamPhotos: Photo[];
-}> = ({ loading, searchedPhotos, randamPhotos}) => {
+  query?: string;
+}> = ({ loading, searchedPhotos, randamPhotos, query }) => {
   if (loading) return <Loading />;
   if (searchedPhotos?.length) {
-    return <PhotoList photos={searchedPhotos} />
+    return <PhotoList photos={searchedPhotos} query={query} />
   }
-  return <PhotoList photos={randamPhotos} />;
+  return <PhotoList photos={randamPhotos} query={query} />;
 }
 
 
@@ -28,21 +29,16 @@ export const Search: FC<{randomPhotos: Photo[]}> = ({ randomPhotos }) => {
   const [searching, setSearching] = useState(false);
   const [searchedPhotos, setSearchedPhotos] = useState<Photo[] | null>(null);
   const [loading, startTransition] = useTransition();
-  // const [readMore, setReadMore] = useState(10);
-
-  // const handleReadMore = async () => {
-  //   setReadMore((count) => count + 10);
-  // };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     event.key === 'Enter' && handleSubmit()
   }
-
+  
   const handleSubmit = async () => {
     if (!query) return;
     try {
       setSearching(true);
-      const response = await fetch(`http://localhost:3000/api/search`, {
+      const response = await fetch(`http://localhost:3000/api/search?page=1`, {
         method: 'POST',
         body: JSON.stringify({
           query
@@ -78,16 +74,25 @@ export const Search: FC<{randomPhotos: Photo[]}> = ({ randomPhotos }) => {
         />
         <button
           className="bg-gray-700 py-2 px-4"
-          onClick={async (event) => await handleSubmit()}
+          onClick={async () => await handleSubmit()}
         >
           <VscSearch />
         </button>
       </div>
-      <PhotoListWrapper
-        loading={searching || loading}
-        searchedPhotos={searchedPhotos}
-        randamPhotos={randomPhotos}
-      />
+      { query
+        ? <PhotoListWrapper
+            loading={searching || loading}
+            searchedPhotos={searchedPhotos}
+            randamPhotos={randomPhotos}
+            query={query}
+          />
+        : <PhotoListWrapper
+            loading={searching || loading}
+            searchedPhotos={searchedPhotos}
+            randamPhotos={randomPhotos}
+          />
+      }
+      
     </>
   )
 }

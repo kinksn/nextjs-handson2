@@ -1,20 +1,49 @@
 'use client';
 
-import { Photo, PhotoSearchResponse } from "../types";
+import { Photo } from "../types";
 import Image from 'next/image';
+import { PhotoSearchResponse } from "../types";
 import { FC, useState, Dispatch, SetStateAction } from 'react';
 
-const handleLoadmore = async (setPhotoList: Dispatch<SetStateAction<Photo[]>>) => {
+const handleLoadmore = async (
+  setPhotoList: Dispatch<SetStateAction<Photo[]>>,
+  setPagenation: Dispatch<SetStateAction<number>>,
+  pagenation: number,
+  query: string
+  ) => {
+  if (query) {
+    try {
+      const response = await fetch(`http://localhost:3000/api/search?page=${pagenation}`, {
+      method: 'POST',
+      body: JSON.stringify({
+        query
+      }),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    if(!response.ok) throw response;
+    setPagenation((pagenation) => pagenation + 1);
+    const json: PhotoSearchResponse = await response.json();
+    setPhotoList((photos) => [ ...photos, ...json.results ]);
+    } catch(error) {
+      console.error(error);
+      alert('取得中にエラーが発生しました');
+    } finally {
+      return;
+    }
+  }
+
   try {
-    const response = await fetch('http://localhost:3000/api/getRandomPhoto', {
+    const response = await fetch(`http://localhost:3000/api/getRandomPhoto?page=${pagenation}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json'
     }
   });
   if(!response.ok) throw response;
+  setPagenation((pagenation) => pagenation + 1);
   const json: Photo[] = await response.json();
-  console.log('Response JSON:', json);
   setPhotoList((photos) => [ ...photos, ...json ]);
   } catch(error) {
     console.error(error);
@@ -22,8 +51,9 @@ const handleLoadmore = async (setPhotoList: Dispatch<SetStateAction<Photo[]>>) =
   }
 }
 
-export const PhotoList: FC<{photos: Photo[]}> = ({ photos }) => {
+export const PhotoList: FC<{photos: Photo[], query?: string }> = ({ photos, query = '' }) => {
   const [photoList, setPhotoList] = useState<Photo[]>(photos);
+  const [pagenation, setPagenation] = useState(2);
   console.log('photoList = ', photoList)
 
   if (!photos) return <>no result</>;
@@ -57,7 +87,11 @@ export const PhotoList: FC<{photos: Photo[]}> = ({ photos }) => {
           </div>
         ))
       }
-      <button onClick={async () => handleLoadmore(setPhotoList)}>MORE</button>
+      <button
+        onClick={async () => handleLoadmore(setPhotoList, setPagenation, pagenation, query)}
+      >
+        MORE
+      </button>
     </div>
   )
 }
